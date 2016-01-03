@@ -143,19 +143,13 @@ qmem_len(const qmem_t item)
 qmem_iter_t qmem_iter_new(const qmem_t item);
 
 static inline bool
-qmem_iter_start(const qmem_iter_t item)
+qmem_iter_end(const qmem_iter_t item)
 {
     if ((item.source)->blknum == 0 || item.current_read_blk == NULL) {
         return true;
     }
-    return (item.source)->head == item.current_read_blk &&
-    item.current_read_seek == 0;
-}
-
-static inline bool
-qmem_iter_end(const qmem_iter_t item)
-{
-    if ((item.source)->blknum == 0 || item.current_read_blk == NULL) {
+    if (item.current_read_blk == (item.source)->tail &&
+        item.current_read_seek >= (item.source)->unwritten) {
         return true;
     }
     return false;

@@ -138,7 +138,9 @@ qmem_iter_forward(qmem_iter_t * item)
 void
 qmem_iter_backward(qmem_iter_t * item)
 {
-    if (qmem_iter_start(*item)) {
+    if (item->current_read_blk == NULL) {
+        item->current_read_blk = item->source->tail;
+        item->current_read_seek = item->source->blklen - 1;
         return;
     }
     if (item->current_read_seek == 0) {

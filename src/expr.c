@@ -92,7 +92,7 @@ op_rank(int op)
         return INT_MAX;
     /* Not start yet */
     case 0:
-        return INT_MAX - 1;
+        return -1;
     /* Other operators */
     default:
         return INT_MAX - 2;
@@ -123,29 +123,29 @@ op_isassign(int op)
 mao_expr
 mao_parse_expr(qmem_iter_t start_pos, qmem_iter_t end_pos)
 {
-    mao_expr           res = NULL;
-    int              paren = 0;
-    int              psign = 0;
-    qmem_iter_t     middle, tmp;
-    int          lowest_op = INT_MAX;
-    bool once_out_of_paren = false;
-    bool         obj_found = false;
+    mao_expr           res = NULL;      /* result */
+    int              paren = 0;         /* count of parentheses */
+    int              psign = 0;         /* previous token type */
+    qmem_iter_t    middle;              /* root token of expr */
+    qmem_iter_t       tmp;              /* test for once_out_of_paren */
+    qmem_iter_t          i = start_pos; /* loop variable */
+    int          lowest_op = INT_MAX;   /* the lowest priority */
+    bool once_out_of_paren = false;     /* whether blocked by parentheses */
+    bool         obj_found = false;     /* for error handling */
+    qmem_t        tmp_save = NULL;      /* tmp for saving copy of token stream add 0 */
+    struct token   emu_tmp = (struct token) {
+        .type=TOKEN_NUMBER_INT, .line=0, .ival = 0
+    };
     
-    /* Expression starts with '+' or '-' */
+    /* Expression starts with '+' or '-', we fill a zero at the start */
     if (op_rank(TOK_CURTYPE(start_pos)) == 1) {
-        res = qalloc(sizeof(struct mao_expr_struct));
-        global_memory_register(res);
-        if (TOK_CURTYPE(start_pos) == TOKEN_OP_ADD) {
-            res->op = POS;
-        } else if (TOK_CURTYPE(start_pos) == TOKEN_OP_SUB) {
-            res->op = NEG;
+        tmp_save = qmem_create(struct token);
+        qmem_append(tmp_save, emu_tmp, struct token);
+        for (i = start_pos; !qmem_iter_eq(i, end_pos); qmem_iter_forward(&i)) {
+            qmem_append(tmp_save, qmem_iter_getval(i, struct token), struct token);
         }
-        qmem_iter_forward(&start_pos);
-        res->left_child = mao_parse_expr(start_pos, end_pos);
-        res->right_child = NULL;
-        return res;
-
-    /* Expression starting with '*' or '-' is invalid */
+        start_pos = qmem_iter_new(tmp_save);
+        for (end_pos = start_pos; !qmem_iter_end(end_pos); qmem_iter_forward(&end_pos));
     } else if (op_rank(TOK_CURTYPE(start_pos)) == 2) {
         add_err_queue("line %u: Unexpected '%c' at beginning of sub-expression.\n",
                       TOK_CURTOK(start_pos).line, TOK_CURTYPE(start_pos) == TOKEN_OP_MUL ? '*' : '/');
@@ -157,12 +157,11 @@ mao_parse_expr(qmem_iter_t start_pos, qmem_iter_t end_pos)
      * variable `once_out_of_paren` is flag of whether an expression
      * is like this.
      */
-    qmem_iter_t i = start_pos;
     if (TOK_CURTYPE(i) != TOKEN_LPAREN) {
         once_out_of_paren = true;
     }
     
-    for (; !qmem_iter_eq(i, end_pos); qmem_iter_forward(&i)) {
+    for (i = start_pos; !qmem_iter_eq(i, end_pos); qmem_iter_forward(&i)) {
         /*
          * There's a problem about operator associativity.
          *
@@ -183,7 +182,7 @@ mao_parse_expr(qmem_iter_t start_pos, qmem_iter_t end_pos)
                 exit(1);
             }
             obj_found = true;
-
+            
         } else if (op_isassign(TOK_CURTYPE(i)) && paren == 0) {
             middle = i;
             lowest_op = 3;
@@ -199,7 +198,7 @@ mao_parse_expr(qmem_iter_t start_pos, qmem_iter_t end_pos)
                 middle = i;
             }
         }
-
+        
         tmp = i;
         qmem_iter_forward(&tmp);
         if (paren == 0 && !qmem_iter_eq(tmp, end_pos)) {
@@ -207,13 +206,13 @@ mao_parse_expr(qmem_iter_t start_pos, qmem_iter_t end_pos)
         }
         psign = TOK_CURTYPE(i);
     }
-
+    
     /* Unmatching parentheses */
     if (paren != 0) {
         add_err_queue("line %u: Unmatching parentheses.\n", TOK_CURTOK(start_pos).line);
         exit(1);
     }
-
+    
     /* The whole expression is an operator */
     if (!obj_found) {
         add_err_queue("line %u: Too many operators.\n", TOK_CURTOK(start_pos).line);
@@ -223,7 +222,7 @@ mao_parse_expr(qmem_iter_t start_pos, qmem_iter_t end_pos)
     if (once_out_of_paren) {
         res = qalloc(sizeof(struct mao_expr_struct));
         global_memory_register(res);
-
+        
         /* The whole expr is only an identifier or number */
         if (lowest_op == INT_MAX) {
             res->left_child = res->right_child = NULL;
@@ -256,6 +255,9 @@ mao_parse_expr(qmem_iter_t start_pos, qmem_iter_t end_pos)
         qmem_iter_backward(&end_pos);
         qmem_iter_forward(&start_pos);
         return mao_parse_expr(start_pos, end_pos);
+    }
+    if (tmp_save != NULL) {
+        qmem_free(tmp_save);
     }
     return res;
 }
