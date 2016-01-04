@@ -229,8 +229,7 @@ qstr_comp(const qstr_t str1, const qstr_t str2)
     qstr_iter_t    str2iter = qstr_iter_new(str2);
     char           c1 = '\0', c2 = '\0';
     
-    for (; qstr_iter_getval(str1iter) != '\0' && qstr_iter_getval(str2iter) != '\0' &&
-         !qstr_iter_end(str1iter) && !qstr_iter_end(str2iter);
+    for (; !qstr_iter_end(str1iter) && !qstr_iter_end(str2iter);
          qstr_iter_forward(&str1iter), qstr_iter_forward(&str2iter)) {
         c1 = qstr_iter_getval(str1iter), c2 = qstr_iter_getval(str2iter);
         if (c1 != c2) {

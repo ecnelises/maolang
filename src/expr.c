@@ -52,15 +52,15 @@ mao_expr_calc(mao_expr src)
             }
             return mao_obj_div(SELECT_VAL(src->left_child), SELECT_VAL(src->right_child));
         case ASSIGN:
-            return mao_obj_assign(src->left_child->val, SELECT_VAL(src->right_child));
+            return mao_obj_assign(SELECT_VAL(src->left_child), SELECT_VAL(src->right_child));
         case ADD_ASSIGN:
-            return mao_obj_adde(src->left_child->val, SELECT_VAL(src->right_child));
+            return mao_obj_adde(SELECT_VAL(src->left_child), SELECT_VAL(src->right_child));
         case SUB_ASSIGN:
-            return mao_obj_sube(src->left_child->val, SELECT_VAL(src->right_child));
+            return mao_obj_sube(SELECT_VAL(src->left_child), SELECT_VAL(src->right_child));
         case MUL_ASSIGN:
-            return mao_obj_mule(src->left_child->val, SELECT_VAL(src->right_child));
+            return mao_obj_mule(SELECT_VAL(src->left_child), SELECT_VAL(src->right_child));
         case DIV_ASSIGN:
-            return mao_obj_dive(src->left_child->val, SELECT_VAL(src->right_child));
+            return mao_obj_dive(SELECT_VAL(src->left_child), SELECT_VAL(src->right_child));
         case NEG:
             return mao_obj_sign(SELECT_VAL(src->left_child), true);
         case POS:

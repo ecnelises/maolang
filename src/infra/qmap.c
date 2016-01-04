@@ -56,8 +56,7 @@ static size_t
 qmap_hash(qstr_t key, size_t domain_max)
 {
     size_t hash = 0;
-    for (qstr_iter_t i = qstr_iter_new(key); qstr_iter_getval(i) != '\0' &&
-         !qstr_iter_end(i);
+    for (qstr_iter_t i = qstr_iter_new(key); !qstr_iter_end(i);
          qstr_iter_forward(&i)) {
         hash = hash * 131 + qstr_iter_getval(i);
     }
