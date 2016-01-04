@@ -152,6 +152,7 @@ mao_parse_expr(qmem_iter_t start_pos, qmem_iter_t end_pos)
         exit(1);
     }
     
+    i = start_pos;
     /*
      * An expression may be blocked by parentheses, like (1+1)
      * variable `once_out_of_paren` is flag of whether an expression
